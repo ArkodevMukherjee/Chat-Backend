@@ -11,16 +11,16 @@ require("dotenv").config();
 const app = express();
 const server = http.createServer(app);
 
-app.use(cors({ origin: "http://127.0.0.1:5500" }));
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 app.use("/user", user);
 
-mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017").then(() =>
+mongoose.connect(process.env.MONGODB_URI).then(() =>
   console.log("MongoDB Connected")
 );
 
 const io = new Server(server, {
-  cors: { origin: "http://127.0.0.1:5500" }
+  cors: { origin: "*" }
 });
 
 io.use(async(socket, next) => {
@@ -41,18 +41,23 @@ io.use(async(socket, next) => {
 });
 
 io.on("connection", (socket) => {
-  const roomId = socket.roomId;
-  socket.join(roomId);
-  console.log(`${socket.user.email} joined room ${roomId}`);
+  socket.on("joinRoom", (roomId) => {
+    socket.join(roomId);
+    socket.roomId = roomId;
+    console.log("User")
+    console.log(`${socket.user.email} joined room ${roomId}`);
 
-  socket.emit("User Data", socket.user);
+    io.to(roomId).emit("new", socket.user);
+  });
 
   socket.on("body", (msg) => {
-    io.to(roomId).emit("chat-message", {
+    if (!socket.roomId) return;
+    socket.to(socket.roomId).emit("chat-message", {
       user: socket.user.email,
       message: msg
     });
   });
 });
+
 
 server.listen(3000, () => console.log("Server running on port http://127.0.0.1:3000"));
