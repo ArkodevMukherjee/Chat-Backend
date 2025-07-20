@@ -59,5 +59,5 @@ io.on("connection", (socket) => {
   });
 });
 
-
-server.listen(3000, () => console.log("Server running on port http://127.0.0.1:3000"));
+const PORT = process.env.PORT
+server.listen(PORT, () => console.log("Server running on port http://127.0.0.1:3000"));
